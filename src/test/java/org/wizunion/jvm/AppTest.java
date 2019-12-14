@@ -1,4 +1,4 @@
-package org.wizunion.;
+package org.wizunion.jvm;
 
 import static org.junit.Assert.assertTrue;
 
