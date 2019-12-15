@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html
  * ClassFile {
  *     u4             magic;
  *     u2             minor_version;
@@ -50,6 +51,17 @@ public class ClassExplorer implements TestInterfaceA,TestInterfaceB{
 
     private short interfaceCnt;
     private List<ClassStruct> interfaceList=new ArrayList<>();
+
+    private short fieldCnt;
+    private List<FieldsStruct> fields=new ArrayList<>();
+
+    private short methodCnt;
+    //method_info is same as fields_info
+    private List<FieldsStruct> methods=new ArrayList<>();
+
+    private short attributeCnt;
+    private List<AttributeStruct> attributes=new ArrayList<>();
+
     public byte[] getPayload() {
         return payload;
     }
@@ -152,6 +164,46 @@ public class ClassExplorer implements TestInterfaceA,TestInterfaceB{
            }
         }
 
+        //field_count
+        fieldCnt=Shorts.fromBytes(payload[begin],payload[begin+1]);
+        begin=begin+2;
+        //field_list
+        for(int i=0;i<fieldCnt;i++){
+            FieldsStruct fs=new FieldsStruct(payload,begin);
+            fs.setName((UTF8Struct)poolList.get(fs.getNameIndex()-1));
+            fs.setDescriptor((UTF8Struct)poolList.get(fs.getDescriptorIndex()-1));
+            for(AttributeStruct as:fs.getAttributes()){
+                as.setName((UTF8Struct)poolList.get(as.getNameIndex()-1));
+            }
+            fields.add(fs);
+            begin=begin+fs.getPayloadLen();
+        }
+
+        methodCnt=Shorts.fromBytes(payload[begin],payload[begin+1]);
+        begin=begin+2;
+        for(int i=0;i<methodCnt;i++){
+            FieldsStruct fs=new FieldsStruct(payload,begin);
+            fs.setName((UTF8Struct)poolList.get(fs.getNameIndex()-1));
+            fs.setDescriptor((UTF8Struct)poolList.get(fs.getDescriptorIndex()-1));
+            for(AttributeStruct as:fs.getAttributes()){
+                as.setName((UTF8Struct)poolList.get(as.getNameIndex()-1));
+            }
+            methods.add(fs);
+            begin=begin+fs.getPayloadLen();
+        }
+
+        attributeCnt=Shorts.fromBytes(payload[begin],payload[begin+1]);
+        begin=begin+2;
+        for(int i=0;i<attributeCnt;i++){
+            AttributeStruct as=new AttributeStruct(payload,begin);
+            as.setName((UTF8Struct)poolList.get(as.getNameIndex()-1));
+            attributes.add(as);
+            begin=begin+as.getPayloadLen();
+        }
+
+
+        System.out.println("----------------over------------");
+        System.out.println("current offset:"+begin+", payload len:"+payload.length);
     }
 
     /**
@@ -242,6 +294,21 @@ public class ClassExplorer implements TestInterfaceA,TestInterfaceB{
         sb.append("\n[interface].count:"+interfaceCnt+"\n");
         for(ClassStruct cs:interfaceList){
             sb.append(cs).append("\n");
+        }
+
+        sb.append("[fields].count:"+fieldCnt).append("\n");
+        for (FieldsStruct fs:fields){
+            sb.append("\t").append(fs).append("\n");
+        }
+
+        sb.append("[methods].count:"+methodCnt).append("\n");
+        for (FieldsStruct fs:methods){
+            sb.append("\t").append(fs).append("\n");
+        }
+
+        sb.append("[attributes].count:"+attributeCnt).append("\n");
+        for(AttributeStruct as:attributes){
+            sb.append("\t").append(as).append("\n");
         }
         return sb.toString();
     }
